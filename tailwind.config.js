@@ -22,8 +22,8 @@ export default {
         },
       },
       fontFamily: {
-        display: ['"Space Grotesk"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        body: ['"Space Grotesk"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        display: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+        body: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
         mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
       },
       backgroundImage: {

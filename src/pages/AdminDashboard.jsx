@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   LogOut, RefreshCw, CheckCircle2, XCircle, PackageCheck, Package,
   ArrowUpDown, Search, Image as ImageIcon, Loader2, Flame, Users, Wallet,
-  Trash2,
+  Trash2, AlertCircle,
 } from 'lucide-react'
 import GlassCard from '../components/GlassCard.jsx'
 import { supabase } from '../lib/supabaseClient.js'
@@ -26,6 +26,7 @@ export default function AdminDashboard() {
   const [search, setSearch] = useState('')
   const [updatingId, setUpdatingId] = useState(null)
   const [deletingId, setDeletingId] = useState(null)
+  const [deleteError, setDeleteError] = useState('')
 
   useEffect(() => {
     if (sessionStorage.getItem('scs_bbq_admin') !== 'true') {
@@ -124,20 +125,43 @@ export default function AdminDashboard() {
 
   const deleteOrder = async (order) => {
     setDeletingId(order.id)
-    const { error } = await supabase.from('orders').delete().eq('id', order.id)
-    if (!error) {
-      // Best-effort cleanup of the stored screenshot; a failure here shouldn't
-      // block the order from being removed from the dashboard.
-      if (order.screenshot_url) {
-        try {
-          const path = order.screenshot_url.split('/payment-screenshots/').pop()
-          if (path) await supabase.storage.from('payment-screenshots').remove([path])
-        } catch (err) {
-          console.error('Could not remove screenshot for deleted order:', err)
-        }
-      }
-      setOrders((prev) => prev.filter((o) => o.id !== order.id))
+    setDeleteError('')
+    // .select() makes Supabase return the rows it actually deleted, so we can
+    // tell a real success apart from a silent no-op (e.g. an RLS policy
+    // quietly matching zero rows, which returns no error but also deletes
+    // nothing — the previous version trusted "no error" alone and removed
+    // the row from the UI even when the database still had it).
+    const { data, error } = await supabase
+      .from('orders')
+      .delete()
+      .eq('id', order.id)
+      .select('id')
+
+    if (error) {
+      setDeletingId(null)
+      setDeleteError(`Couldn't delete ${order.ticket_number}: ${error.message}`)
+      return
     }
+
+    if (!data || data.length === 0) {
+      setDeletingId(null)
+      setDeleteError(
+        `${order.ticket_number} wasn't deleted. Your Supabase project may be missing the delete policy — re-run schema.sql's "Public can delete orders" policy.`
+      )
+      return
+    }
+
+    // Best-effort cleanup of the stored screenshot; a failure here shouldn't
+    // block the order from being removed from the dashboard.
+    if (order.screenshot_url) {
+      try {
+        const path = order.screenshot_url.split('/payment-screenshots/').pop()
+        if (path) await supabase.storage.from('payment-screenshots').remove([path])
+      } catch (err) {
+        console.error('Could not remove screenshot for deleted order:', err)
+      }
+    }
+    setOrders((prev) => prev.filter((o) => o.id !== order.id))
     setDeletingId(null)
   }
 
@@ -225,6 +249,21 @@ export default function AdminDashboard() {
           </div>
         )}
       </GlassCard>
+
+      {deleteError && (
+        <div className="mb-5 flex items-start gap-2 rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+          <AlertCircle size={16} className="mt-0.5 shrink-0" />
+          <span className="flex-1">{deleteError}</span>
+          <button
+            type="button"
+            onClick={() => setDeleteError('')}
+            className="shrink-0 text-red-300/70 transition hover:text-red-200"
+            aria-label="Dismiss"
+          >
+            <XCircle size={16} />
+          </button>
+        </div>
+      )}
 
       {loading ? (
         <div className="flex items-center justify-center py-20 text-smoke-500">

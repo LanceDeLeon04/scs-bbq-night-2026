@@ -333,12 +333,15 @@ export default function OrderForm() {
       {step === 2 && ticket && (
         <div className="animate-rise mx-auto max-w-2xl">
           <GlassCard className="overflow-hidden p-0">
-            <div className="flex flex-col items-center gap-3 bg-ember-gradient px-6 py-8 text-center">
-              <CheckCircle2 size={34} className="text-char-950" />
-              <p className="font-display text-lg font-semibold text-char-950">
+            <div className="relative flex flex-col items-center gap-3 overflow-hidden border-b border-white/[0.06] px-6 py-10 text-center">
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_60%_at_50%_0%,rgba(47,125,232,0.22),transparent)]" />
+              <div className="relative flex h-14 w-14 items-center justify-center rounded-full bg-ember-gradient shadow-ember">
+                <CheckCircle2 size={28} strokeWidth={2.3} className="text-white" />
+              </div>
+              <p className="relative font-display text-lg font-semibold text-smoke-200">
                 Order Submitted
               </p>
-              <p className="text-sm text-char-950/80">
+              <p className="relative text-sm text-smoke-500">
                 Screenshot this ticket and present it upon order pickup.
               </p>
             </div>
