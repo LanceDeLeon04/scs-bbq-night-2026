@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   LogOut, RefreshCw, CheckCircle2, XCircle, PackageCheck, Package,
   ArrowUpDown, Search, Image as ImageIcon, Loader2, Flame, Users, Wallet,
-  Trash2, AlertCircle, Building2, ScanLine, Undo2, FileText, FileSpreadsheet,
+  Trash2, AlertCircle, Building2, ScanLine, Undo2, FileText, FileSpreadsheet, Files,
 } from 'lucide-react'
 import GlassCard from '../components/GlassCard.jsx'
 import DispatchModal from '../components/DispatchModal.jsx'
@@ -12,6 +12,7 @@ import WaybillModal from '../components/WaybillModal.jsx'
 import { supabase } from '../lib/supabaseClient.js'
 import { emailPaymentValidated, emailClaimed } from '../lib/email.js'
 import { exportOrdersToExcel } from '../lib/exportExcel.js'
+import { generateAllWaybillsPDF } from '../lib/waybillPdf.js'
 
 const SORTS = {
   ticket: { label: 'Ticket Number', key: 'ticket_number' },
@@ -210,6 +211,15 @@ export default function AdminDashboard() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => generateAllWaybillsPDF(orders)}
+            disabled={orders.length === 0}
+            className="ember-ring flex items-center gap-1.5 rounded-full border border-white/10 px-3.5 py-2 text-xs text-smoke-400 transition hover:border-white/20 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <Files size={13} />
+            Generate All Waybills
+          </button>
           <button
             type="button"
             onClick={() => exportOrdersToExcel(orders)}
