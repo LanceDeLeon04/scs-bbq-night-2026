@@ -4,6 +4,7 @@ import {
   CheckCircle2, PackageCheck, ArrowLeft, ChevronRight,
 } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient.js'
+import { emailClaimed } from '../lib/email.js'
 
 const AUTO_NEXT_MS = 3000
 
@@ -94,6 +95,7 @@ export default function DispatchModal({ orders, onClose, onDispatched }) {
 
     const updated = { ...order, claimed: true, claimed_at: claimedAt }
     onDispatched(updated)
+    emailClaimed(updated)
     setDispatchedInfo(updated)
     setSelected(null)
     setMatches(null)

@@ -9,6 +9,7 @@ import GlassCard from '../components/GlassCard.jsx'
 import DispatchModal from '../components/DispatchModal.jsx'
 import RefundModal from '../components/RefundModal.jsx'
 import { supabase } from '../lib/supabaseClient.js'
+import { emailPaymentValidated, emailClaimed } from '../lib/email.js'
 
 const SORTS = {
   ticket: { label: 'Ticket Number', key: 'ticket_number' },
@@ -124,14 +125,17 @@ export default function AdminDashboard() {
 
   const toggleField = async (order, field) => {
     setUpdatingId(order.id + field)
+    const newValue = !order[field]
     const { error } = await supabase
       .from('orders')
-      .update({ [field]: !order[field] })
+      .update({ [field]: newValue })
       .eq('id', order.id)
     if (!error) {
-      setOrders((prev) =>
-        prev.map((o) => (o.id === order.id ? { ...o, [field]: !o[field] } : o))
-      )
+      const updated = { ...order, [field]: newValue }
+      setOrders((prev) => prev.map((o) => (o.id === order.id ? updated : o)))
+      // Only notify when the flag is being turned ON (not when un-toggling).
+      if (newValue && field === 'validated') emailPaymentValidated(updated)
+      if (newValue && field === 'claimed') emailClaimed(updated)
     }
     setUpdatingId(null)
   }

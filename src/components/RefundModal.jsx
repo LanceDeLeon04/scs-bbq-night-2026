@@ -3,6 +3,7 @@ import {
   X, Undo2, Upload, Loader2, AlertCircle, CheckCircle2, Image as ImageIcon,
 } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient.js'
+import { emailRefund } from '../lib/email.js'
 
 /**
  * Confirms a refund for a single order. Requires a proof-of-refund
@@ -68,12 +69,14 @@ export default function RefundModal({ order, onClose, onRefunded }) {
       }
       if (updateError) throw updateError
 
-      onRefunded({
+      const updated = {
         ...order,
         refunded: true,
         refund_proof_url: urlData.publicUrl,
         refunded_at: refundedAt,
-      })
+      }
+      onRefunded(updated)
+      emailRefund(updated, urlData.publicUrl)
       setDone(true)
     } catch (err) {
       console.error(err)

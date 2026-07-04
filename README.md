@@ -9,6 +9,9 @@ React + Vite + Tailwind on the frontend, Supabase (Postgres + Storage) on the ba
 - **Admin dashboard** (`/admin` → `/admin/dashboard`) — sign in, view all orders, sort by ticket or item,
   filter by validation status and section, validate payments, mark orders claimed.
 - **Supabase schema** (`schema.sql`) — `orders` table + a public storage bucket for payment screenshots.
+- **Email notifications** — guests are emailed automatically when their order is placed, when
+  payment is validated, when the order is claimed, and when a refund is processed (with the
+  refund proof screenshot attached). Sent server-side via Gmail SMTP — see `EMAIL_SETUP.md`.
 
 ## 2. Add your item photos
 
@@ -84,7 +87,14 @@ Open the printed local URL. The order form is at `/`, admin login at `/admin`.
 3. Add the same four environment variables in the project's dashboard settings.
 4. Deploy — no `VITE_BASE_PATH` needed for these (they serve from the domain root).
 
-## 7. Using it on the night
+## 7. Set up email notifications
+
+Guests get automatic emails at each order milestone (placed, validated, claimed, refunded).
+This requires a one-time Supabase Edge Function deploy + secret setup — see **`EMAIL_SETUP.md`**
+for the full walkthrough. Don't skip the "why this needs a server-side function" note in there
+before configuring anything.
+
+## 8. Using it on the night
 
 - Students fill out the form, pay via GCash, upload their screenshot, and get a ticket
   number (`SCS-XXXXXX`) — tell them to screenshot it and present it at pickup.

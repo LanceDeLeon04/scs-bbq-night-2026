@@ -9,6 +9,7 @@ import { MENU, PAYMENT_QR_IMG, GCASH_NAME, GCASH_NUMBER } from '../lib/menu.js'
 import { DEPARTMENTS, isPositionDepartment } from '../lib/departments.js'
 import { generateTicketNumber } from '../lib/ticket.js'
 import { supabase } from '../lib/supabaseClient.js'
+import { emailOrderPlaced } from '../lib/email.js'
 
 const STEPS = ['Details', 'Payment', 'Ticket']
 const DRAFT_KEY = 'scs_bbq_draft_v1'
@@ -137,7 +138,7 @@ export default function OrderForm() {
         subtotal: qtys[item.id] * item.price,
       }))
 
-      const { error: insertError } = await supabase.from('orders').insert({
+      const orderRecord = {
         ticket_number: ticketNumber,
         id_no: idNo.trim(),
         name: name.trim(),
@@ -150,8 +151,12 @@ export default function OrderForm() {
         screenshot_url: urlData.publicUrl,
         validated: false,
         claimed: false,
-      })
+      }
+
+      const { error: insertError } = await supabase.from('orders').insert(orderRecord)
       if (insertError) throw insertError
+
+      emailOrderPlaced(orderRecord)
 
       setTicket(ticketNumber)
       setStep(2)
