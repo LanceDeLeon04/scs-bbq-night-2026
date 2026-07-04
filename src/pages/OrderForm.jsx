@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import GlassCard from '../components/GlassCard.jsx'
 import ItemRow from '../components/ItemRow.jsx'
+import Barcode from '../components/Barcode.jsx'
 import { MENU, PAYMENT_QR_IMG, GCASH_NAME, GCASH_NUMBER } from '../lib/menu.js'
 import { DEPARTMENTS, isPositionDepartment } from '../lib/departments.js'
 import { generateTicketNumber } from '../lib/ticket.js'
@@ -490,6 +491,13 @@ export default function OrderForm() {
                 {ticket}
                 {copied ? <Check size={18} /> : <Copy size={18} className="opacity-60" />}
               </button>
+
+              <div className="mx-auto mb-6 flex w-full flex-col items-center gap-1.5 rounded-xl bg-white p-4">
+                <Barcode value={ticket} height={56} width={2} fontSize={13} lineColor="#111111" />
+                <p className="text-[10px] uppercase tracking-[0.15em] text-char-950/50">
+                  Scan at pickup counter
+                </p>
+              </div>
 
               <div className="space-y-2 rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
                 <Row label="Name" value={name} />
