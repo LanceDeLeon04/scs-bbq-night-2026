@@ -5,7 +5,7 @@ import {
 } from 'lucide-react'
 import GlassCard from '../components/GlassCard.jsx'
 import ItemRow from '../components/ItemRow.jsx'
-import { MENU, PAYMENT_QR_IMG } from '../lib/menu.js'
+import { MENU, PAYMENT_QR_IMG, GCASH_NAME, GCASH_NUMBER } from '../lib/menu.js'
 import { DEPARTMENTS, isPositionDepartment } from '../lib/departments.js'
 import { generateTicketNumber } from '../lib/ticket.js'
 import { supabase } from '../lib/supabaseClient.js'
@@ -25,6 +25,7 @@ export default function OrderForm() {
   const [error, setError] = useState('')
   const [ticket, setTicket] = useState(null)
   const [copied, setCopied] = useState(false)
+  const [copiedNumber, setCopiedNumber] = useState(false)
 
   const total = useMemo(
     () => MENU.reduce((sum, item) => sum + (qtys[item.id] || 0) * item.price, 0),
@@ -115,6 +116,12 @@ export default function OrderForm() {
     await navigator.clipboard.writeText(ticket)
     setCopied(true)
     setTimeout(() => setCopied(false), 1500)
+  }
+
+  const copyGcashNumber = async () => {
+    await navigator.clipboard.writeText(GCASH_NUMBER)
+    setCopiedNumber(true)
+    setTimeout(() => setCopiedNumber(false), 1500)
   }
 
   return (
@@ -298,6 +305,33 @@ export default function OrderForm() {
               <p className="text-2xl font-semibold text-ember-gradient font-display">
                 ₱{total.toFixed(0)}
               </p>
+            </div>
+
+            <div className="mt-5 rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
+              <p className="mb-3 text-center text-[11px] uppercase tracking-[0.18em] text-smoke-500">
+                Or send manually via GCash
+              </p>
+              <div className="flex flex-col items-center gap-2">
+                <p className="font-display text-sm font-semibold text-smoke-300">
+                  {GCASH_NAME}
+                </p>
+                <button
+                  type="button"
+                  onClick={copyGcashNumber}
+                  className="ember-ring flex items-center gap-2.5 rounded-lg border border-white/10 bg-char-900/80 px-4 py-2 font-mono text-base font-semibold tracking-wide text-ember-400 transition hover:border-ember-500/50 hover:bg-char-900"
+                  aria-label="Copy GCash number"
+                >
+                  {GCASH_NUMBER}
+                  {copiedNumber ? (
+                    <Check size={16} className="text-ember-400" />
+                  ) : (
+                    <Copy size={16} className="opacity-60" />
+                  )}
+                </button>
+                <p className="text-[11px] text-smoke-500">
+                  {copiedNumber ? 'Copied to clipboard' : 'Tap the number to copy it'}
+                </p>
+              </div>
             </div>
 
             <div className="mt-6">

@@ -11,3 +11,5 @@ export const MENU = [
 ]
 
 export const PAYMENT_QR_IMG = '/Resources/gcash-qr.png'
+export const GCASH_NAME = 'WI****A AB**Y R.'
+export const GCASH_NUMBER = '09283102518'
