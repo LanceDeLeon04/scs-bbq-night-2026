@@ -87,6 +87,7 @@ export default function AdminDashboard() {
           o.ticket_number.toLowerCase().includes(q) ||
           o.name.toLowerCase().includes(q) ||
           o.id_no.toLowerCase().includes(q) ||
+          (o.mobile || '').toLowerCase().includes(q) ||
           (o.department || '').toLowerCase().includes(q)
       )
     }
@@ -217,7 +218,7 @@ export default function AdminDashboard() {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search ticket, name, ID no., or department"
+              placeholder="Search ticket, name, ID no., mobile, or department"
               className="input pl-9"
             />
           </div>
@@ -380,6 +381,9 @@ function OrderRow({ order, onToggle, updating, onDelete, deleting }) {
                 ))}
               </div>
               <p className="mt-2 text-xs text-smoke-500">ID No.: {order.id_no}</p>
+              {order.mobile && (
+                <p className="mt-1 text-xs text-smoke-500">Mobile: {order.mobile}</p>
+              )}
             </div>
 
             <div>

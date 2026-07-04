@@ -27,6 +27,7 @@ export default function OrderForm() {
   const [step, setStep] = useState(draft.step === 1 ? 1 : 0)
   const [idNo, setIdNo] = useState(draft.idNo || '')
   const [name, setName] = useState(draft.name || '')
+  const [mobile, setMobile] = useState(draft.mobile || '')
   const [department, setDepartment] = useState(draft.department || '')
   const [section, setSection] = useState(draft.section || '')
   const [qtys, setQtys] = useState(draft.qtys || {})
@@ -52,7 +53,12 @@ export default function OrderForm() {
   const sectionPlaceholder = positionMode ? 'Vice President' : 'BSCS261A'
 
   const detailsValid =
-    idNo.trim() && name.trim() && department.trim() && section.trim() && orderedItems.length > 0
+    idNo.trim() &&
+    name.trim() &&
+    mobile.trim() &&
+    department.trim() &&
+    section.trim() &&
+    orderedItems.length > 0
 
   // Keep a temporary draft in sessionStorage so a refresh doesn't wipe what
   // the person already typed. Scoped to the browser tab/session — it clears
@@ -67,6 +73,7 @@ export default function OrderForm() {
           step: step === 1 ? 1 : 0,
           idNo,
           name,
+          mobile,
           department,
           section,
           qtys,
@@ -75,7 +82,14 @@ export default function OrderForm() {
     } catch {
       // sessionStorage unavailable (private browsing, etc.) — fail silently
     }
-  }, [step, idNo, name, department, section, qtys])
+  }, [step, idNo, name, mobile, department, section, qtys])
+
+  // Each step (Details → Payment → Ticket) is a full "page" worth of content.
+  // Without this, advancing while scrolled down on the current step would
+  // land the person mid-way down the next step instead of at its top.
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [step])
 
   const handleFile = (file) => {
     if (!file) return
@@ -121,6 +135,7 @@ export default function OrderForm() {
         ticket_number: ticketNumber,
         id_no: idNo.trim(),
         name: name.trim(),
+        mobile: mobile.trim(),
         department: department.trim(),
         section: section.trim().toUpperCase(),
         items,
@@ -234,6 +249,16 @@ export default function OrderForm() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Juan Dela Cruz"
+                    className="input"
+                  />
+                </Field>
+                <Field label="Mobile Number" className="sm:col-span-2">
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    value={mobile}
+                    onChange={(e) => setMobile(e.target.value)}
+                    placeholder="09XXXXXXXXX"
                     className="input"
                   />
                 </Field>
@@ -468,6 +493,7 @@ export default function OrderForm() {
 
               <div className="space-y-2 rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
                 <Row label="Name" value={name} />
+                <Row label="Mobile Number" value={mobile} />
                 <Row label="Department" value={department} />
                 <Row label={sectionLabel} value={section.toUpperCase()} />
                 <Row label="ID No." value={idNo} />
