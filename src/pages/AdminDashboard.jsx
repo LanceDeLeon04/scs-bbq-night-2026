@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import {
   LogOut, RefreshCw, CheckCircle2, XCircle, PackageCheck, Package,
   ArrowUpDown, Search, Image as ImageIcon, Loader2, Flame, Users, Wallet,
-  Trash2, AlertCircle, Building2, ScanLine,
+  Trash2, AlertCircle, Building2, ScanLine, Undo2,
 } from 'lucide-react'
 import GlassCard from '../components/GlassCard.jsx'
 import DispatchModal from '../components/DispatchModal.jsx'
+import RefundModal from '../components/RefundModal.jsx'
 import { supabase } from '../lib/supabaseClient.js'
 
 const SORTS = {
@@ -30,6 +31,7 @@ export default function AdminDashboard() {
   const [deletingId, setDeletingId] = useState(null)
   const [deleteError, setDeleteError] = useState('')
   const [dispatchOpen, setDispatchOpen] = useState(false)
+  const [refundOrder, setRefundOrder] = useState(null)
 
   useEffect(() => {
     if (sessionStorage.getItem('scs_bbq_admin') !== 'true') {
@@ -90,6 +92,7 @@ export default function AdminDashboard() {
           o.name.toLowerCase().includes(q) ||
           o.id_no.toLowerCase().includes(q) ||
           (o.mobile || '').toLowerCase().includes(q) ||
+          (o.email || '').toLowerCase().includes(q) ||
           (o.department || '').toLowerCase().includes(q)
       )
     }
@@ -181,6 +184,13 @@ export default function AdminDashboard() {
     )
   }
 
+  const handleRefunded = (updatedOrder) => {
+    setOrders((prev) =>
+      prev.map((o) => (o.id === updatedOrder.id ? { ...o, ...updatedOrder } : o))
+    )
+    setRefundOrder(null)
+  }
+
   return (
     <main className="relative z-10 mx-auto max-w-6xl px-5 pb-24 pt-8 sm:pt-10">
       <div className="animate-rise mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -234,7 +244,7 @@ export default function AdminDashboard() {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search ticket, name, ID no., mobile, or department"
+              placeholder="Search ticket, name, ID no., mobile, email, or department"
               className="input pl-9"
             />
           </div>
@@ -313,6 +323,7 @@ export default function AdminDashboard() {
               updating={updatingId}
               onDelete={deleteOrder}
               deleting={deletingId === order.id}
+              onRefundClick={setRefundOrder}
             />
           ))}
         </div>
@@ -323,6 +334,14 @@ export default function AdminDashboard() {
           orders={orders}
           onClose={() => setDispatchOpen(false)}
           onDispatched={handleDispatched}
+        />
+      )}
+
+      {refundOrder && (
+        <RefundModal
+          order={refundOrder}
+          onClose={() => setRefundOrder(null)}
+          onRefunded={handleRefunded}
         />
       )}
     </main>
@@ -366,7 +385,7 @@ function Select({ icon: Icon, value, onChange, options }) {
   )
 }
 
-function OrderRow({ order, onToggle, updating, onDelete, deleting }) {
+function OrderRow({ order, onToggle, updating, onDelete, deleting, onRefundClick }) {
   const [open, setOpen] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   return (
@@ -389,6 +408,11 @@ function OrderRow({ order, onToggle, updating, onDelete, deleting }) {
         <span className="font-mono text-sm text-smoke-300">₱{Number(order.total).toFixed(0)}</span>
         <Badge active={order.validated} onLabel="Validated" offLabel="Pending" />
         <Badge active={order.claimed} onLabel="Claimed" offLabel="Unclaimed" />
+        {order.refunded && (
+          <span className="rounded-full bg-red-500/15 px-2.5 py-1 text-[11px] font-medium text-red-300">
+            Refunded
+          </span>
+        )}
       </button>
 
       {open && (
@@ -407,6 +431,9 @@ function OrderRow({ order, onToggle, updating, onDelete, deleting }) {
               <p className="mt-2 text-xs text-smoke-500">ID No.: {order.id_no}</p>
               {order.mobile && (
                 <p className="mt-1 text-xs text-smoke-500">Mobile: {order.mobile}</p>
+              )}
+              {order.email && (
+                <p className="mt-1 text-xs text-smoke-500">Email: {order.email}</p>
               )}
             </div>
 
@@ -445,7 +472,37 @@ function OrderRow({ order, onToggle, updating, onDelete, deleting }) {
                   onLabel="Claimed"
                   offLabel="Mark Claimed"
                 />
+                {order.refunded ? (
+                  <span className="flex items-center gap-1.5 rounded-lg bg-red-500/15 px-3 py-2 text-xs font-medium text-red-300">
+                    <Undo2 size={13} />
+                    Refunded
+                    {order.refunded_at
+                      ? ` · ${new Date(order.refunded_at).toLocaleDateString()}`
+                      : ''}
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => onRefundClick(order)}
+                    className="ember-ring flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-2 text-xs font-medium text-smoke-400 transition hover:border-red-500/50 hover:text-red-300"
+                  >
+                    <Undo2 size={13} />
+                    Refund
+                  </button>
+                )}
               </div>
+
+              {order.refunded && order.refund_proof_url && (
+                <a
+                  href={order.refund_proof_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="ember-ring mt-2 flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-xs text-smoke-400 transition hover:border-red-500/40 hover:text-red-300"
+                >
+                  <ImageIcon size={14} />
+                  View Refund Proof
+                </a>
+              )}
 
               <div className="mt-4 border-t border-white/[0.06] pt-4">
                 {!confirmingDelete ? (

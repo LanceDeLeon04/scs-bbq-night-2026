@@ -29,6 +29,7 @@ export default function OrderForm() {
   const [idNo, setIdNo] = useState(draft.idNo || '')
   const [name, setName] = useState(draft.name || '')
   const [mobile, setMobile] = useState(draft.mobile || '')
+  const [email, setEmail] = useState(draft.email || '')
   const [department, setDepartment] = useState(draft.department || '')
   const [section, setSection] = useState(draft.section || '')
   const [qtys, setQtys] = useState(draft.qtys || {})
@@ -53,10 +54,14 @@ export default function OrderForm() {
   const sectionLabel = positionMode ? 'Position' : 'Section'
   const sectionPlaceholder = positionMode ? 'Vice President' : 'BSCS261A'
 
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  const emailValid = EMAIL_RE.test(email.trim())
+
   const detailsValid =
     idNo.trim() &&
     name.trim() &&
     mobile.trim() &&
+    emailValid &&
     department.trim() &&
     section.trim() &&
     orderedItems.length > 0
@@ -75,6 +80,7 @@ export default function OrderForm() {
           idNo,
           name,
           mobile,
+          email,
           department,
           section,
           qtys,
@@ -83,7 +89,7 @@ export default function OrderForm() {
     } catch {
       // sessionStorage unavailable (private browsing, etc.) — fail silently
     }
-  }, [step, idNo, name, mobile, department, section, qtys])
+  }, [step, idNo, name, mobile, email, department, section, qtys])
 
   // Each step (Details → Payment → Ticket) is a full "page" worth of content.
   // Without this, advancing while scrolled down on the current step would
@@ -137,6 +143,7 @@ export default function OrderForm() {
         id_no: idNo.trim(),
         name: name.trim(),
         mobile: mobile.trim(),
+        email: email.trim(),
         department: department.trim(),
         section: section.trim().toUpperCase(),
         items,
@@ -262,6 +269,19 @@ export default function OrderForm() {
                     placeholder="09XXXXXXXXX"
                     className="input"
                   />
+                </Field>
+                <Field label="Email Address" className="sm:col-span-2">
+                  <input
+                    type="email"
+                    inputMode="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="NU email or any email"
+                    className="input"
+                  />
+                  <p className="mt-1.5 text-[11px] text-smoke-500">
+                    Receipts and updates will be emailed here.
+                  </p>
                 </Field>
               </div>
             </GlassCard>
@@ -502,6 +522,7 @@ export default function OrderForm() {
               <div className="space-y-2 rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
                 <Row label="Name" value={name} />
                 <Row label="Mobile Number" value={mobile} />
+                <Row label="Email" value={email} />
                 <Row label="Department" value={department} />
                 <Row label={sectionLabel} value={section.toUpperCase()} />
                 <Row label="ID No." value={idNo} />
