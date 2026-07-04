@@ -25,6 +25,8 @@ create table if not exists public.orders (
 -- Safe to run even if the table already existed before "department" was added.
 alter table public.orders add column if not exists department text not null default '';
 alter table public.orders add column if not exists mobile text not null default '';
+-- Records when an order was dispatched/claimed at the pickup counter (Admin → Dispatch).
+alter table public.orders add column if not exists claimed_at timestamptz;
 
 create index if not exists orders_ticket_idx on public.orders (ticket_number);
 create index if not exists orders_section_idx on public.orders (section);

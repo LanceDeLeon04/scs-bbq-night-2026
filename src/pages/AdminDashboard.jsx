@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import {
   LogOut, RefreshCw, CheckCircle2, XCircle, PackageCheck, Package,
   ArrowUpDown, Search, Image as ImageIcon, Loader2, Flame, Users, Wallet,
-  Trash2, AlertCircle, Building2,
+  Trash2, AlertCircle, Building2, ScanLine,
 } from 'lucide-react'
 import GlassCard from '../components/GlassCard.jsx'
+import DispatchModal from '../components/DispatchModal.jsx'
 import { supabase } from '../lib/supabaseClient.js'
 
 const SORTS = {
@@ -28,6 +29,7 @@ export default function AdminDashboard() {
   const [updatingId, setUpdatingId] = useState(null)
   const [deletingId, setDeletingId] = useState(null)
   const [deleteError, setDeleteError] = useState('')
+  const [dispatchOpen, setDispatchOpen] = useState(false)
 
   useEffect(() => {
     if (sessionStorage.getItem('scs_bbq_admin') !== 'true') {
@@ -173,6 +175,12 @@ export default function AdminDashboard() {
     setDeletingId(null)
   }
 
+  const handleDispatched = (updatedOrder) => {
+    setOrders((prev) =>
+      prev.map((o) => (o.id === updatedOrder.id ? { ...o, ...updatedOrder } : o))
+    )
+  }
+
   return (
     <main className="relative z-10 mx-auto max-w-6xl px-5 pb-24 pt-8 sm:pt-10">
       <div className="animate-rise mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -185,6 +193,14 @@ export default function AdminDashboard() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setDispatchOpen(true)}
+            className="ember-ring flex items-center gap-1.5 rounded-full bg-ember-gradient px-3.5 py-2 text-xs font-semibold text-char-950 shadow-ember transition hover:brightness-110"
+          >
+            <ScanLine size={13} />
+            Dispatch
+          </button>
           <button
             type="button"
             onClick={() => fetchOrders(true)}
@@ -300,6 +316,14 @@ export default function AdminDashboard() {
             />
           ))}
         </div>
+      )}
+
+      {dispatchOpen && (
+        <DispatchModal
+          orders={orders}
+          onClose={() => setDispatchOpen(false)}
+          onDispatched={handleDispatched}
+        />
       )}
     </main>
   )
