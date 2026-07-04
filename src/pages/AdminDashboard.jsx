@@ -3,13 +3,15 @@ import { useNavigate } from 'react-router-dom'
 import {
   LogOut, RefreshCw, CheckCircle2, XCircle, PackageCheck, Package,
   ArrowUpDown, Search, Image as ImageIcon, Loader2, Flame, Users, Wallet,
-  Trash2, AlertCircle, Building2, ScanLine, Undo2,
+  Trash2, AlertCircle, Building2, ScanLine, Undo2, FileText, FileSpreadsheet,
 } from 'lucide-react'
 import GlassCard from '../components/GlassCard.jsx'
 import DispatchModal from '../components/DispatchModal.jsx'
 import RefundModal from '../components/RefundModal.jsx'
+import WaybillModal from '../components/WaybillModal.jsx'
 import { supabase } from '../lib/supabaseClient.js'
 import { emailPaymentValidated, emailClaimed } from '../lib/email.js'
+import { exportOrdersToExcel } from '../lib/exportExcel.js'
 
 const SORTS = {
   ticket: { label: 'Ticket Number', key: 'ticket_number' },
@@ -33,6 +35,7 @@ export default function AdminDashboard() {
   const [deleteError, setDeleteError] = useState('')
   const [dispatchOpen, setDispatchOpen] = useState(false)
   const [refundOrder, setRefundOrder] = useState(null)
+  const [waybillOrder, setWaybillOrder] = useState(null)
 
   useEffect(() => {
     if (sessionStorage.getItem('scs_bbq_admin') !== 'true') {
@@ -206,7 +209,16 @@ export default function AdminDashboard() {
             Validate payments and mark orders as claimed.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => exportOrdersToExcel(orders)}
+            disabled={orders.length === 0}
+            className="ember-ring flex items-center gap-1.5 rounded-full border border-white/10 px-3.5 py-2 text-xs text-smoke-400 transition hover:border-white/20 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <FileSpreadsheet size={13} />
+            Export Excel
+          </button>
           <button
             type="button"
             onClick={() => setDispatchOpen(true)}
@@ -328,6 +340,7 @@ export default function AdminDashboard() {
               onDelete={deleteOrder}
               deleting={deletingId === order.id}
               onRefundClick={setRefundOrder}
+              onWaybillClick={setWaybillOrder}
             />
           ))}
         </div>
@@ -347,6 +360,10 @@ export default function AdminDashboard() {
           onClose={() => setRefundOrder(null)}
           onRefunded={handleRefunded}
         />
+      )}
+
+      {waybillOrder && (
+        <WaybillModal order={waybillOrder} onClose={() => setWaybillOrder(null)} />
       )}
     </main>
   )
@@ -389,7 +406,7 @@ function Select({ icon: Icon, value, onChange, options }) {
   )
 }
 
-function OrderRow({ order, onToggle, updating, onDelete, deleting, onRefundClick }) {
+function OrderRow({ order, onToggle, updating, onDelete, deleting, onRefundClick, onWaybillClick }) {
   const [open, setOpen] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   return (
@@ -494,6 +511,14 @@ function OrderRow({ order, onToggle, updating, onDelete, deleting, onRefundClick
                     Refund
                   </button>
                 )}
+                <button
+                  type="button"
+                  onClick={() => onWaybillClick(order)}
+                  className="ember-ring flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-2 text-xs font-medium text-smoke-400 transition hover:border-ember-500/50 hover:text-ember-400"
+                >
+                  <FileText size={13} />
+                  Waybill
+                </button>
               </div>
 
               {order.refunded && order.refund_proof_url && (

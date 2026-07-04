@@ -93,6 +93,24 @@ body {
   .ember-dot, .animate-rise { animation: none !important; }
 }
 
+/* Scopes window.print() to just the open waybill, hiding the rest of the
+   dashboard (background layers, grain overlay, order list, etc). */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .waybill-print-area,
+  .waybill-print-area * {
+    visibility: visible;
+  }
+  .waybill-print-area {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+  }
+}
+
 @layer components {
   .input {
     @apply ember-ring w-full rounded-lg border border-white/10 bg-char-900/80 px-3.5 py-2.5 text-sm text-smoke-300 placeholder:text-smoke-500/60 transition focus:border-ember-500/50;
