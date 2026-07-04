@@ -51,10 +51,16 @@ function money(n: unknown) {
 }
 
 // ---------------------------------------------------------------------------
-// Shared visual language — mirrors the app's dark "ember" theme (char/ember
-// colors, monospace display font, gradient accents, glass cards) so the
-// email feels like it came from the same product as the order form.
+// Shared visual language — clean, light-first "system UI" look: a neutral
+// paper background, a single warm BBQ-ember accent used sparingly, system
+// font stack, and a matching dark-mode flip for clients that support
+// prefers-color-scheme (Apple Mail, iOS/macOS Mail, some Outlook builds).
+// Clients that ignore the media query simply keep the light theme, which is
+// the safe default we want.
 // ---------------------------------------------------------------------------
+
+const FONT_STACK =
+  "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif"
 
 function emailShell({
   eyebrow,
@@ -70,34 +76,73 @@ function emailShell({
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="supported-color-schemes" content="light dark" />
     <title>${escapeHtml(title)}</title>
+    <style>
+      body { background-color: #f4f4f5; }
+      .card { background-color: #ffffff; border-color: #e4e4e7; }
+      .header { background-color: #fff7ed; }
+      .icon-badge { background-color: #ffedd5; }
+      .eyebrow { color: #b45309; }
+      .title { color: #18181b; }
+      .body-text { color: #3f3f46; }
+      .muted { color: #71717a; }
+      .faint { color: #a1a1aa; }
+      .divider { background-color: #e4e4e7; }
+      .ticket-box { background-color: #fff7ed; border-color: #fed7aa; }
+      .ticket-label { color: #a1621b; }
+      .ticket-value { color: #c2410c; }
+      .accent { color: #c2410c; }
+      .notice { background-color: #fefce8; border-color: #fde68a; color: #854d0e; }
+      a { color: #c2410c; }
+
+      @media (prefers-color-scheme: dark) {
+        body { background-color: #09090b !important; }
+        .card { background-color: #18181b !important; border-color: #27272a !important; }
+        .header { background-color: #1f1a14 !important; }
+        .icon-badge { background-color: #3a2412 !important; }
+        .eyebrow { color: #fb923c !important; }
+        .title { color: #fafafa !important; }
+        .body-text { color: #d4d4d8 !important; }
+        .muted { color: #a1a1aa !important; }
+        .faint { color: #71717a !important; }
+        .divider { background-color: #27272a !important; }
+        .ticket-box { background-color: #271a0f !important; border-color: #7c3d10 !important; }
+        .ticket-label { color: #d99a5b !important; }
+        .ticket-value { color: #fb923c !important; }
+        .accent { color: #fb923c !important; }
+        .notice { background-color: #241f0a !important; border-color: #4d4009 !important; color: #fde68a !important; }
+        a { color: #fb923c !important; }
+      }
+    </style>
   </head>
-  <body style="margin:0;padding:0;background-color:#0b0a09;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#0b0a09;padding:32px 14px;">
+  <body style="margin:0;padding:0;background-color:#f4f4f5;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5;padding:32px 14px;">
       <tr>
         <td align="center">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background-color:#131110;border:1px solid rgba(255,255,255,0.08);border-radius:18px;overflow:hidden;font-family:'Courier New',ui-monospace,SFMono-Regular,Menlo,monospace;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="card" style="max-width:480px;background-color:#ffffff;border:1px solid #e4e4e7;border-radius:16px;overflow:hidden;font-family:${FONT_STACK};">
             <tr>
-              <td style="background:linear-gradient(135deg,#5eb1ff,#2f7de8 55%,#123f96);padding:30px 28px 26px;text-align:center;">
-                <div style="display:inline-block;width:46px;height:46px;line-height:46px;border-radius:50%;background:rgba(255,255,255,0.16);font-size:22px;">🔥</div>
-                <p style="margin:16px 0 4px;color:rgba(255,255,255,0.85);font-size:11px;letter-spacing:3px;text-transform:uppercase;">${escapeHtml(eyebrow)}</p>
-                <h1 style="margin:0;color:#ffffff;font-size:19px;font-weight:700;font-family:'Courier New',ui-monospace,SFMono-Regular,Menlo,monospace;">${escapeHtml(title)}</h1>
+              <td class="header" style="background-color:#fff7ed;padding:28px 28px 24px;text-align:center;">
+                <div class="icon-badge" style="display:inline-block;width:44px;height:44px;line-height:44px;border-radius:50%;background-color:#ffedd5;font-size:20px;">🔥</div>
+                <p class="eyebrow" style="margin:14px 0 4px;color:#b45309;font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:600;">${escapeHtml(eyebrow)}</p>
+                <h1 class="title" style="margin:0;color:#18181b;font-size:20px;font-weight:700;font-family:${FONT_STACK};">${escapeHtml(title)}</h1>
               </td>
             </tr>
             <tr>
-              <td style="padding:26px 28px 8px;color:#e7e2db;font-size:14px;line-height:1.65;">
+              <td class="body-text" style="padding:26px 28px 8px;color:#3f3f46;font-size:14px;line-height:1.65;">
                 ${bodyHtml}
               </td>
             </tr>
             <tr>
               <td style="padding:20px 28px 24px;">
-                <div style="height:1px;background:rgba(255,255,255,0.08);"></div>
+                <div class="divider" style="height:1px;background-color:#e4e4e7;"></div>
               </td>
             </tr>
             <tr>
               <td style="padding:0 28px 26px;text-align:center;">
-                <p style="margin:0;color:#8a8074;font-size:11px;">SCS Student Council &middot; Orientation Week 2026</p>
-                <p style="margin:4px 0 0;color:#3a332c;font-size:10px;">This is an automated message — please don't reply directly to this email.</p>
+                <p class="muted" style="margin:0;color:#71717a;font-size:11px;">SCS Student Council &middot; Orientation Week 2026</p>
+                <p class="faint" style="margin:4px 0 0;color:#a1a1aa;font-size:10px;">This is an automated message — please don't reply directly to this email.</p>
               </td>
             </tr>
           </table>
@@ -109,16 +154,20 @@ function emailShell({
 }
 
 function ticketBadge(ticketNumber: string, label = 'Order ID') {
-  return `<div style="margin:2px 0 20px;padding:16px 18px;border:1px solid rgba(47,125,232,0.35);background:rgba(47,125,232,0.1);border-radius:14px;text-align:center;">
-    <p style="margin:0 0 6px;font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:#8a8074;">${escapeHtml(label)}</p>
-    <p style="margin:0;font-size:24px;font-weight:700;letter-spacing:3px;color:#5eb1ff;font-family:'Courier New',ui-monospace,SFMono-Regular,Menlo,monospace;">${escapeHtml(ticketNumber)}</p>
+  return `<div class="ticket-box" style="margin:2px 0 20px;padding:16px 18px;border:1px solid #fed7aa;background-color:#fff7ed;border-radius:12px;text-align:center;">
+    <p class="ticket-label" style="margin:0 0 6px;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#a1621b;font-weight:600;">${escapeHtml(label)}</p>
+    <p class="ticket-value" style="margin:0;font-size:22px;font-weight:700;letter-spacing:2px;color:#c2410c;font-family:${FONT_STACK};">${escapeHtml(ticketNumber)}</p>
   </div>`
 }
 
 function statusPill(text: string, tone: 'ember' | 'neutral' = 'ember') {
-  const bg = tone === 'ember' ? 'rgba(47,125,232,0.16)' : 'rgba(255,255,255,0.06)'
-  const color = tone === 'ember' ? '#5eb1ff' : '#b9b0a3'
-  return `<span style="display:inline-block;padding:4px 12px;border-radius:999px;background:${bg};color:${color};font-size:11px;font-weight:700;letter-spacing:0.5px;">${escapeHtml(text)}</span>`
+  const bg = tone === 'ember' ? '#ffedd5' : '#f4f4f5'
+  const color = tone === 'ember' ? '#c2410c' : '#52525b'
+  return `<span style="display:inline-block;padding:4px 12px;border-radius:999px;background-color:${bg};color:${color};font-size:11px;font-weight:700;letter-spacing:0.3px;">${escapeHtml(text)}</span>`
+}
+
+function noticeBox(html: string) {
+  return `<div class="notice" style="margin:16px 0 0;padding:12px 14px;border:1px solid #fde68a;background-color:#fefce8;border-radius:10px;font-size:12.5px;line-height:1.55;color:#854d0e;">${html}</div>`
 }
 
 function detailRows(rows: Array<[string, string]>) {
@@ -127,8 +176,8 @@ function detailRows(rows: Array<[string, string]>) {
       .filter(([, v]) => v)
       .map(
         ([label, value]) => `<tr>
-          <td style="padding:4px 0;color:#8a8074;">${escapeHtml(label)}</td>
-          <td style="padding:4px 0;text-align:right;color:#e7e2db;">${escapeHtml(value)}</td>
+          <td class="muted" style="padding:4px 0;color:#71717a;">${escapeHtml(label)}</td>
+          <td class="body-text" style="padding:4px 0;text-align:right;color:#3f3f46;">${escapeHtml(value)}</td>
         </tr>`
       )
       .join('')}
@@ -140,17 +189,17 @@ function itemsTable(order: any) {
   const rows = items
     .map(
       (it: any) => `<tr>
-        <td style="padding:6px 0;color:#b9b0a3;font-size:13px;">${escapeHtml(it.name)} &times; ${escapeHtml(it.qty)}</td>
-        <td style="padding:6px 0;text-align:right;color:#e7e2db;font-size:13px;">${money(it.subtotal)}</td>
+        <td class="muted" style="padding:6px 0;color:#52525b;font-size:13px;">${escapeHtml(it.name)} &times; ${escapeHtml(it.qty)}</td>
+        <td class="body-text" style="padding:6px 0;text-align:right;color:#3f3f46;font-size:13px;">${money(it.subtotal)}</td>
       </tr>`
     )
     .join('')
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:4px 0 16px;">
     ${rows}
-    <tr><td colspan="2" style="padding-top:10px;"><div style="height:1px;background:rgba(255,255,255,0.08);"></div></td></tr>
+    <tr><td colspan="2" style="padding-top:10px;"><div class="divider" style="height:1px;background-color:#e4e4e7;"></div></td></tr>
     <tr>
-      <td style="padding-top:10px;font-weight:700;color:#e7e2db;font-size:14px;">Total</td>
-      <td style="padding-top:10px;text-align:right;font-weight:700;color:#5eb1ff;font-size:15px;">${money(order.total)}</td>
+      <td class="title" style="padding-top:10px;font-weight:700;color:#18181b;font-size:14px;">Total</td>
+      <td class="accent" style="padding-top:10px;text-align:right;font-weight:700;color:#c2410c;font-size:15px;">${money(order.total)}</td>
     </tr>
   </table>`
 }
@@ -176,13 +225,16 @@ function orderPlacedEmail(order: any) {
         ['ID No.', order.id_no],
         ['Mobile', order.mobile],
       ])}
-      <p style="margin:18px 0 0;font-size:13px;color:#b9b0a3;">
+      <p class="muted" style="margin:18px 0 0;font-size:13px;color:#71717a;">
         Status: ${statusPill('Pending Validation', 'neutral')}
       </p>
-      <p style="margin:16px 0 0;font-size:13px;color:#8a8074;">
+      <p class="muted" style="margin:16px 0 0;font-size:13px;color:#71717a;">
         An admin will validate your payment shortly — you'll get another email once that's done.
         Keep your Order ID handy; it's what you'll give at the pickup counter.
       </p>
+      ${noticeBox(
+        `<strong>Can't find this email later?</strong> Please check your Spam/Junk folder for this confirmation and mark it as "Not Spam" so future updates land in your inbox.`
+      )}
     `,
   })
   return { subject, html }
@@ -196,11 +248,11 @@ function paymentValidatedEmail(order: any) {
     bodyHtml: `
       <p style="margin:0 0 16px;">Hi ${escapeHtml(order.name)}, good news — an admin has validated your payment.</p>
       ${ticketBadge(order.ticket_number)}
-      <p style="margin:0 0 12px;font-size:13px;color:#b9b0a3;">
+      <p class="muted" style="margin:0 0 12px;font-size:13px;color:#71717a;">
         Status: ${statusPill('Validated')}
       </p>
       ${itemsTable(order)}
-      <p style="margin:16px 0 0;font-size:13px;color:#8a8074;">
+      <p class="muted" style="margin:16px 0 0;font-size:13px;color:#71717a;">
         Your order is confirmed. Bring your Order ID (or your name) to the pickup counter on BBQ Night to claim it.
       </p>
     `,
@@ -219,11 +271,11 @@ function claimedEmail(order: any) {
     bodyHtml: `
       <p style="margin:0 0 16px;">Hi ${escapeHtml(order.name)}, your order has been picked up at the counter. Enjoy the BBQ Night! 🔥</p>
       ${ticketBadge(order.ticket_number)}
-      <p style="margin:0 0 12px;font-size:13px;color:#b9b0a3;">
+      <p class="muted" style="margin:0 0 12px;font-size:13px;color:#71717a;">
         Status: ${statusPill('Claimed')}
       </p>
       ${detailRows([['Claimed At', claimedWhen]])}
-      <p style="margin:16px 0 0;font-size:13px;color:#8a8074;">
+      <p class="muted" style="margin:16px 0 0;font-size:13px;color:#71717a;">
         Thanks for ordering, and see you at Orientation Week 2026!
       </p>
     `,
@@ -242,14 +294,14 @@ function refundEmail(order: any) {
     bodyHtml: `
       <p style="margin:0 0 16px;">Hi ${escapeHtml(order.name)}, your payment for this order has been refunded by an admin.</p>
       ${ticketBadge(order.ticket_number)}
-      <p style="margin:0 0 12px;font-size:13px;color:#b9b0a3;">
+      <p class="muted" style="margin:0 0 12px;font-size:13px;color:#71717a;">
         Status: ${statusPill('Refunded', 'neutral')}
       </p>
       ${detailRows([
         ['Amount', money(order.total)],
         ['Refunded At', refundedWhen],
       ])}
-      <p style="margin:16px 0 0;font-size:13px;color:#8a8074;">
+      <p class="muted" style="margin:16px 0 0;font-size:13px;color:#71717a;">
         Proof of the refund is attached to this email for your records.
       </p>
     `,
