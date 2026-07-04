@@ -204,6 +204,11 @@ function itemsTable(order: any) {
   </table>`
 }
 
+function itemsText(order: any) {
+  const items = Array.isArray(order.items) ? order.items : []
+  return items.map((it: any) => `- ${it.name} x${it.qty}: ${money(it.subtotal)}`).join('\n')
+}
+
 // ---------------------------------------------------------------------------
 // Per-event templates
 // ---------------------------------------------------------------------------
@@ -237,7 +242,27 @@ function orderPlacedEmail(order: any) {
       )}
     `,
   })
-  return { subject, html }
+  const text = [
+    `Hi ${order.name}, thanks for your order! Here's your confirmation.`,
+    ``,
+    `Order ID: ${order.ticket_number}`,
+    ``,
+    `Order Summary:`,
+    itemsText(order),
+    `Total: ${money(order.total)}`,
+    ``,
+    `Name: ${order.name}`,
+    `Department: ${order.department || ''}`,
+    `Section: ${order.section || ''}`,
+    `ID No.: ${order.id_no || ''}`,
+    `Mobile: ${order.mobile || ''}`,
+    ``,
+    `Status: Pending Validation`,
+    `An admin will validate your payment shortly — you'll get another email once that's done. Keep your Order ID handy; it's what you'll give at the pickup counter.`,
+    ``,
+    `Can't find this email later? Please check your Spam/Junk folder for this confirmation and mark it as "Not Spam" so future updates land in your inbox.`,
+  ].join('\n')
+  return { subject, html, text }
 }
 
 function paymentValidatedEmail(order: any) {
@@ -257,7 +282,18 @@ function paymentValidatedEmail(order: any) {
       </p>
     `,
   })
-  return { subject, html }
+  const text = [
+    `Hi ${order.name}, good news — an admin has validated your payment.`,
+    ``,
+    `Order ID: ${order.ticket_number}`,
+    `Status: Validated`,
+    ``,
+    itemsText(order),
+    `Total: ${money(order.total)}`,
+    ``,
+    `Your order is confirmed. Bring your Order ID (or your name) to the pickup counter on BBQ Night to claim it.`,
+  ].join('\n')
+  return { subject, html, text }
 }
 
 function claimedEmail(order: any) {
@@ -280,7 +316,18 @@ function claimedEmail(order: any) {
       </p>
     `,
   })
-  return { subject, html }
+  const text = [
+    `Hi ${order.name}, your order has been picked up at the counter. Enjoy the BBQ Night!`,
+    ``,
+    `Order ID: ${order.ticket_number}`,
+    `Status: Claimed`,
+    claimedWhen ? `Claimed At: ${claimedWhen}` : '',
+    ``,
+    `Thanks for ordering, and see you at Orientation Week 2026!`,
+  ]
+    .filter(Boolean)
+    .join('\n')
+  return { subject, html, text }
 }
 
 function refundEmail(order: any) {
@@ -306,7 +353,19 @@ function refundEmail(order: any) {
       </p>
     `,
   })
-  return { subject, html }
+  const text = [
+    `Hi ${order.name}, your payment for this order has been refunded by an admin.`,
+    ``,
+    `Order ID: ${order.ticket_number}`,
+    `Status: Refunded`,
+    `Amount: ${money(order.total)}`,
+    refundedWhen ? `Refunded At: ${refundedWhen}` : '',
+    ``,
+    `Proof of the refund is attached to this email for your records.`,
+  ]
+    .filter(Boolean)
+    .join('\n')
+  return { subject, html, text }
 }
 
 // ---------------------------------------------------------------------------
@@ -335,19 +394,19 @@ Deno.serve(async (req) => {
     return json({ skipped: true, reason: 'Order has no email on file.' })
   }
 
-  let subject: string, html: string
+  let subject: string, html: string, text: string
   switch (type) {
     case 'order_placed':
-      ;({ subject, html } = orderPlacedEmail(order))
+      ;({ subject, html, text } = orderPlacedEmail(order))
       break
     case 'payment_validated':
-      ;({ subject, html } = paymentValidatedEmail(order))
+      ;({ subject, html, text } = paymentValidatedEmail(order))
       break
     case 'claimed':
-      ;({ subject, html } = claimedEmail(order))
+      ;({ subject, html, text } = claimedEmail(order))
       break
     case 'refund':
-      ;({ subject, html } = refundEmail(order))
+      ;({ subject, html, text } = refundEmail(order))
       break
     default:
       return json({ error: `Unknown email type: ${type}` }, 400)
@@ -390,7 +449,7 @@ Deno.serve(async (req) => {
       from: `${FROM_NAME} <${GMAIL_USER}>`,
       to: order.email,
       subject,
-      content: 'auto',
+      content: text,
       html,
       attachments,
     })
