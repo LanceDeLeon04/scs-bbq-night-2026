@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react'
 import {
   Flame, Upload, CheckCircle2, Loader2, AlertCircle,
-  Copy, Check, Image as ImageIcon,
+  Copy, Check, Image as ImageIcon, ChevronDown,
 } from 'lucide-react'
 import GlassCard from '../components/GlassCard.jsx'
 import ItemRow from '../components/ItemRow.jsx'
 import { MENU, PAYMENT_QR_IMG } from '../lib/menu.js'
+import { DEPARTMENTS, isPositionDepartment } from '../lib/departments.js'
 import { generateTicketNumber } from '../lib/ticket.js'
 import { supabase } from '../lib/supabaseClient.js'
 
@@ -15,6 +16,7 @@ export default function OrderForm() {
   const [step, setStep] = useState(0)
   const [idNo, setIdNo] = useState('')
   const [name, setName] = useState('')
+  const [department, setDepartment] = useState('')
   const [section, setSection] = useState('')
   const [qtys, setQtys] = useState({})
   const [screenshot, setScreenshot] = useState(null)
@@ -33,7 +35,12 @@ export default function OrderForm() {
     [qtys]
   )
 
-  const detailsValid = idNo.trim() && name.trim() && section.trim() && orderedItems.length > 0
+  const positionMode = isPositionDepartment(department)
+  const sectionLabel = positionMode ? 'Position' : 'Section'
+  const sectionPlaceholder = positionMode ? 'Vice President' : 'BSCS261A'
+
+  const detailsValid =
+    idNo.trim() && name.trim() && department.trim() && section.trim() && orderedItems.length > 0
 
   const handleFile = (file) => {
     if (!file) return
@@ -79,6 +86,7 @@ export default function OrderForm() {
         ticket_number: ticketNumber,
         id_no: idNo.trim(),
         name: name.trim(),
+        department: department.trim(),
         section: section.trim().toUpperCase(),
         items,
         total,
@@ -134,6 +142,31 @@ export default function OrderForm() {
                 Your Information
               </h2>
               <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Department" className="sm:col-span-2">
+                  <div className="relative">
+                    <select
+                      value={department}
+                      onChange={(e) => {
+                        setDepartment(e.target.value)
+                        setSection('')
+                      }}
+                      className="input appearance-none pr-9"
+                    >
+                      <option value="" disabled className="bg-char-900">
+                        Select department
+                      </option>
+                      {DEPARTMENTS.map((dept) => (
+                        <option key={dept} value={dept} className="bg-char-900">
+                          {dept}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown
+                      size={16}
+                      className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-smoke-500"
+                    />
+                  </div>
+                </Field>
                 <Field label="ID No.">
                   <input
                     value={idNo}
@@ -142,11 +175,11 @@ export default function OrderForm() {
                     className="input"
                   />
                 </Field>
-                <Field label="Section">
+                <Field label={sectionLabel}>
                   <input
                     value={section}
                     onChange={(e) => setSection(e.target.value)}
-                    placeholder="BSCS261A"
+                    placeholder={sectionPlaceholder}
                     className="input"
                   />
                 </Field>
@@ -362,7 +395,8 @@ export default function OrderForm() {
 
               <div className="space-y-2 rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
                 <Row label="Name" value={name} />
-                <Row label="Section" value={section.toUpperCase()} />
+                <Row label="Department" value={department} />
+                <Row label={sectionLabel} value={section.toUpperCase()} />
                 <Row label="ID No." value={idNo} />
                 <div className="my-2 h-px bg-white/[0.06]" />
                 {orderedItems.map((item) => (

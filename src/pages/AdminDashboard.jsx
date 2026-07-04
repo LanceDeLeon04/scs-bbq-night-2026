@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   LogOut, RefreshCw, CheckCircle2, XCircle, PackageCheck, Package,
   ArrowUpDown, Search, Image as ImageIcon, Loader2, Flame, Users, Wallet,
-  Trash2, AlertCircle,
+  Trash2, AlertCircle, Building2,
 } from 'lucide-react'
 import GlassCard from '../components/GlassCard.jsx'
 import { supabase } from '../lib/supabaseClient.js'
@@ -21,6 +21,7 @@ export default function AdminDashboard() {
   const [refreshing, setRefreshing] = useState(false)
   const [sortBy, setSortBy] = useState('date')
   const [validationFilter, setValidationFilter] = useState('all') // all | validated | pending
+  const [departmentFilter, setDepartmentFilter] = useState('all')
   const [sectionFilter, setSectionFilter] = useState('all')
   const [itemFilter, setItemFilter] = useState('all')
   const [search, setSearch] = useState('')
@@ -55,6 +56,10 @@ export default function AdminDashboard() {
     navigate('/admin')
   }
 
+  const departments = useMemo(
+    () => Array.from(new Set(orders.map((o) => o.department).filter(Boolean))).sort(),
+    [orders]
+  )
   const sections = useMemo(
     () => Array.from(new Set(orders.map((o) => o.section))).sort(),
     [orders]
@@ -70,6 +75,7 @@ export default function AdminDashboard() {
 
     if (validationFilter === 'validated') rows = rows.filter((o) => o.validated)
     if (validationFilter === 'pending') rows = rows.filter((o) => !o.validated)
+    if (departmentFilter !== 'all') rows = rows.filter((o) => o.department === departmentFilter)
     if (sectionFilter !== 'all') rows = rows.filter((o) => o.section === sectionFilter)
     if (itemFilter !== 'all') {
       rows = rows.filter((o) => (o.items || []).some((it) => it.name === itemFilter))
@@ -80,7 +86,8 @@ export default function AdminDashboard() {
         (o) =>
           o.ticket_number.toLowerCase().includes(q) ||
           o.name.toLowerCase().includes(q) ||
-          o.id_no.toLowerCase().includes(q)
+          o.id_no.toLowerCase().includes(q) ||
+          (o.department || '').toLowerCase().includes(q)
       )
     }
 
@@ -97,7 +104,7 @@ export default function AdminDashboard() {
       sorted.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
     }
     return sorted
-  }, [orders, validationFilter, sectionFilter, itemFilter, search, sortBy])
+  }, [orders, validationFilter, departmentFilter, sectionFilter, itemFilter, search, sortBy])
 
   const stats = useMemo(() => {
     const total = orders.length
@@ -204,13 +211,13 @@ export default function AdminDashboard() {
       </div>
 
       <GlassCard className="mb-5 p-4 sm:p-5">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
           <div className="relative lg:col-span-2">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-smoke-500" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search ticket, name, or ID no."
+              placeholder="Search ticket, name, ID no., or department"
               className="input pl-9"
             />
           </div>
@@ -230,6 +237,12 @@ export default function AdminDashboard() {
               { value: 'validated', label: 'Validated Only' },
               { value: 'pending', label: 'Pending Only' },
             ]}
+          />
+          <Select
+            icon={Building2}
+            value={departmentFilter}
+            onChange={setDepartmentFilter}
+            options={[{ value: 'all', label: 'All Departments' }, ...departments.map((d) => ({ value: d, label: d }))]}
           />
           <Select
             icon={Users}
@@ -340,6 +353,11 @@ function OrderRow({ order, onToggle, updating, onDelete, deleting }) {
       >
         <span className="font-mono text-sm font-semibold text-ember-400">{order.ticket_number}</span>
         <span className="min-w-0 flex-1 truncate text-sm text-smoke-300">{order.name}</span>
+        {order.department && (
+          <span className="rounded-full border border-white/10 px-2 py-0.5 text-[11px] text-smoke-500">
+            {order.department}
+          </span>
+        )}
         <span className="rounded-full border border-white/10 px-2 py-0.5 text-[11px] text-smoke-500">
           {order.section}
         </span>

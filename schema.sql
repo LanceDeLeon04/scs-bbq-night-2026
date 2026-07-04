@@ -11,6 +11,7 @@ create table if not exists public.orders (
   ticket_number text unique not null,
   id_no text not null,
   name text not null,
+  department text not null default '',
   section text not null,
   items jsonb not null,
   total numeric(10,2) not null default 0,
@@ -20,8 +21,12 @@ create table if not exists public.orders (
   created_at timestamptz not null default now()
 );
 
+-- Safe to run even if the table already existed before "department" was added.
+alter table public.orders add column if not exists department text not null default '';
+
 create index if not exists orders_ticket_idx on public.orders (ticket_number);
 create index if not exists orders_section_idx on public.orders (section);
+create index if not exists orders_department_idx on public.orders (department);
 create index if not exists orders_validated_idx on public.orders (validated);
 
 -- Row Level Security
