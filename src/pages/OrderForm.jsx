@@ -38,6 +38,7 @@ export default function OrderForm() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [ticket, setTicket] = useState(null)
+  const [placedOrder, setPlacedOrder] = useState(null)
   const [copied, setCopied] = useState(false)
   const [copiedNumber, setCopiedNumber] = useState(false)
 
@@ -71,7 +72,11 @@ export default function OrderForm() {
   // itself once the order is actually submitted (see handleSubmit) or when
   // the browser tab is closed. The payment screenshot can't be persisted
   // this way (files aren't serializable), so only step 0/1 field data is kept.
+  // Once the order has been placed (step 2), we deliberately skip writing —
+  // otherwise this effect would immediately re-save the now-stale field
+  // values right after handleSubmit clears them, undoing the reset on refresh.
   useEffect(() => {
+    if (step === 2) return
     try {
       sessionStorage.setItem(
         DRAFT_KEY,
@@ -159,12 +164,37 @@ export default function OrderForm() {
       emailOrderPlaced(orderRecord)
 
       setTicket(ticketNumber)
+      setPlacedOrder({
+        idNo: orderRecord.id_no,
+        name: orderRecord.name,
+        mobile: orderRecord.mobile,
+        email: orderRecord.email,
+        department: orderRecord.department,
+        section: orderRecord.section,
+        sectionLabel,
+        items,
+        total,
+      })
       setStep(2)
       try {
         sessionStorage.removeItem(DRAFT_KEY)
       } catch {
         // ignore
       }
+
+      // Order placed successfully — nothing left to retain. Clear every
+      // field so a refresh on the ticket screen lands on a blank form
+      // instead of resurrecting this now-submitted order's details. The
+      // ticket screen itself reads from `placedOrder` above, not these.
+      setIdNo('')
+      setName('')
+      setMobile('')
+      setEmail('')
+      setDepartment('')
+      setSection('')
+      setQtys({})
+      setScreenshot(null)
+      setScreenshotPreview(null)
     } catch (err) {
       console.error(err)
       setError(
@@ -486,7 +516,7 @@ export default function OrderForm() {
         </div>
       )}
 
-      {step === 2 && ticket && (
+      {step === 2 && ticket && placedOrder && (
         <div className="animate-rise mx-auto max-w-2xl">
           <GlassCard className="overflow-hidden p-0">
             <div className="relative flex flex-col items-center gap-3 overflow-hidden border-b border-white/[0.06] px-6 py-10 text-center">
@@ -519,29 +549,29 @@ export default function OrderForm() {
               <div className="mb-6 flex items-start gap-2 rounded-xl border border-ember-600/25 bg-ember-600/[0.08] p-3 text-xs text-smoke-400">
                 <Mail size={14} className="mt-0.5 shrink-0 text-ember-500" />
                 <span>
-                  We've sent a confirmation to <span className="font-medium text-smoke-200">{email}</span>.
+                  We've sent a confirmation to <span className="font-medium text-smoke-200">{placedOrder.email}</span>.
                   Please check your <span className="font-medium text-smoke-200">Spam/Junk folder</span> if it
                   doesn't show up in a few minutes, and mark it "Not Spam" so future updates land in your inbox.
                 </span>
               </div>
 
               <div className="space-y-2 rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
-                <Row label="Name" value={name} />
-                <Row label="Mobile Number" value={mobile} />
-                <Row label="Email" value={email} />
-                <Row label="Department" value={department} />
-                <Row label={sectionLabel} value={section.toUpperCase()} />
-                <Row label="ID No." value={idNo} />
+                <Row label="Name" value={placedOrder.name} />
+                <Row label="Mobile Number" value={placedOrder.mobile} />
+                <Row label="Email" value={placedOrder.email} />
+                <Row label="Department" value={placedOrder.department} />
+                <Row label={placedOrder.sectionLabel} value={placedOrder.section} />
+                <Row label="ID No." value={placedOrder.idNo} />
                 <div className="my-2 h-px bg-white/[0.06]" />
-                {orderedItems.map((item) => (
+                {placedOrder.items.map((item) => (
                   <Row
                     key={item.id}
-                    label={`${item.name} × ${qtys[item.id]}`}
-                    value={`₱${(qtys[item.id] * item.price).toFixed(0)}`}
+                    label={`${item.name} × ${item.qty}`}
+                    value={`₱${item.subtotal.toFixed(0)}`}
                   />
                 ))}
                 <div className="my-2 h-px bg-white/[0.06]" />
-                <Row label="Total Paid" value={`₱${total.toFixed(0)}`} strong />
+                <Row label="Total Paid" value={`₱${placedOrder.total.toFixed(0)}`} strong />
                 <Row label="Status" value="Pending Validation" pending />
               </div>
 
