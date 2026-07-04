@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   Flame, Upload, CheckCircle2, Loader2, AlertCircle,
-  Copy, Check, Image as ImageIcon, ChevronDown,
+  Copy, Check, Image as ImageIcon, ChevronDown, Mail,
 } from 'lucide-react'
 import GlassCard from '../components/GlassCard.jsx'
 import ItemRow from '../components/ItemRow.jsx'
@@ -541,6 +541,15 @@ export default function OrderForm() {
                 Take a screenshot of this ticket now. An admin will validate your payment
                 before your order can be claimed.
               </p>
+
+              <div className="mt-4 flex items-start gap-2 rounded-xl border border-ember-600/25 bg-ember-600/[0.08] p-3 text-xs text-smoke-400">
+                <Mail size={14} className="mt-0.5 shrink-0 text-ember-500" />
+                <span>
+                  We've sent a confirmation to <span className="font-medium text-smoke-200">{email}</span>.
+                  Please check your <span className="font-medium text-smoke-200">Spam/Junk folder</span> if it
+                  doesn't show up in a few minutes, and mark it "Not Spam" so future updates land in your inbox.
+                </span>
+              </div>
             </div>
           </GlassCard>
         </div>
