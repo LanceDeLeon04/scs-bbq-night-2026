@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Flame, Upload, CheckCircle2, Loader2, AlertCircle,
   Copy, Check, Image as ImageIcon, ChevronDown,
@@ -11,14 +11,25 @@ import { generateTicketNumber } from '../lib/ticket.js'
 import { supabase } from '../lib/supabaseClient.js'
 
 const STEPS = ['Details', 'Payment', 'Ticket']
+const DRAFT_KEY = 'scs_bbq_draft_v1'
+
+function loadDraft() {
+  try {
+    const raw = sessionStorage.getItem(DRAFT_KEY)
+    return raw ? JSON.parse(raw) : {}
+  } catch {
+    return {}
+  }
+}
 
 export default function OrderForm() {
-  const [step, setStep] = useState(0)
-  const [idNo, setIdNo] = useState('')
-  const [name, setName] = useState('')
-  const [department, setDepartment] = useState('')
-  const [section, setSection] = useState('')
-  const [qtys, setQtys] = useState({})
+  const draft = loadDraft()
+  const [step, setStep] = useState(draft.step === 1 ? 1 : 0)
+  const [idNo, setIdNo] = useState(draft.idNo || '')
+  const [name, setName] = useState(draft.name || '')
+  const [department, setDepartment] = useState(draft.department || '')
+  const [section, setSection] = useState(draft.section || '')
+  const [qtys, setQtys] = useState(draft.qtys || {})
   const [screenshot, setScreenshot] = useState(null)
   const [screenshotPreview, setScreenshotPreview] = useState(null)
   const [submitting, setSubmitting] = useState(false)
@@ -42,6 +53,29 @@ export default function OrderForm() {
 
   const detailsValid =
     idNo.trim() && name.trim() && department.trim() && section.trim() && orderedItems.length > 0
+
+  // Keep a temporary draft in sessionStorage so a refresh doesn't wipe what
+  // the person already typed. Scoped to the browser tab/session — it clears
+  // itself once the order is actually submitted (see handleSubmit) or when
+  // the browser tab is closed. The payment screenshot can't be persisted
+  // this way (files aren't serializable), so only step 0/1 field data is kept.
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(
+        DRAFT_KEY,
+        JSON.stringify({
+          step: step === 1 ? 1 : 0,
+          idNo,
+          name,
+          department,
+          section,
+          qtys,
+        })
+      )
+    } catch {
+      // sessionStorage unavailable (private browsing, etc.) — fail silently
+    }
+  }, [step, idNo, name, department, section, qtys])
 
   const handleFile = (file) => {
     if (!file) return
@@ -99,6 +133,11 @@ export default function OrderForm() {
 
       setTicket(ticketNumber)
       setStep(2)
+      try {
+        sessionStorage.removeItem(DRAFT_KEY)
+      } catch {
+        // ignore
+      }
     } catch (err) {
       console.error(err)
       setError(
