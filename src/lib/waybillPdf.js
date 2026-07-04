@@ -53,12 +53,14 @@ function drawWaybillCard(doc, order, x, y, w, h) {
   doc.setLineDashPattern([], 0)
 
   const pad = 4
-  let cursorY = y + pad + 3
+  let cursorY = y + pad + 5
 
+  // Order/ticket number — bold, all caps, at the very top of the card,
+  // replacing what used to be a plain "WAYBILL" heading.
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(11)
+  doc.setFontSize(13)
   doc.setTextColor(20)
-  doc.text('WAYBILL', x + w / 2, cursorY, { align: 'center' })
+  doc.text(String(order.ticket_number).toUpperCase(), x + w / 2, cursorY, { align: 'center' })
   cursorY += 4.5
 
   doc.setDrawColor(210)
@@ -82,7 +84,7 @@ function drawWaybillCard(doc, order, x, y, w, h) {
   const orderText =
     (order.items || []).map((it) => `${it.name} x${it.qty}`).join(', ') || '-'
   const wrapped = doc.splitTextToSize(orderText, fieldWidth)
-  const bottomLimit = y + h - pad - 4 // leaves room for the ticket-number line
+  const bottomLimit = y + h - pad
   const maxLines = Math.max(1, Math.floor((bottomLimit - cursorY) / LINE_H))
   const shown = wrapped.slice(0, maxLines)
   if (wrapped.length > shown.length && shown.length > 0) {
@@ -90,10 +92,6 @@ function drawWaybillCard(doc, order, x, y, w, h) {
     shown[shown.length - 1] = last.slice(0, Math.max(0, last.length - 3)) + '...'
   }
   doc.text(shown, x + pad, cursorY)
-
-  doc.setFontSize(7)
-  doc.setTextColor(120)
-  doc.text(`Ticket: ${order.ticket_number}`, x + w / 2, y + h - 2.5, { align: 'center' })
 }
 
 function drawField(doc, label, value, x, y, width) {

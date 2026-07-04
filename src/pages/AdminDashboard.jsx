@@ -121,10 +121,14 @@ export default function AdminDashboard() {
     const total = orders.length
     const validated = orders.filter((o) => o.validated).length
     const claimed = orders.filter((o) => o.claimed).length
-    const revenue = orders
+    const grossRevenue = orders
       .filter((o) => o.validated)
       .reduce((sum, o) => sum + Number(o.total || 0), 0)
-    return { total, validated, claimed, revenue }
+    const refundedAmount = orders
+      .filter((o) => o.refunded)
+      .reduce((sum, o) => sum + Number(o.total || 0), 0)
+    const revenue = grossRevenue - refundedAmount
+    return { total, validated, claimed, revenue, refundedAmount }
   }, [orders])
 
   const toggleField = async (order, field) => {
@@ -256,11 +260,12 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
         <StatCard icon={Package} label="Total Orders" value={stats.total} />
         <StatCard icon={CheckCircle2} label="Validated" value={stats.validated} accent />
         <StatCard icon={PackageCheck} label="Claimed" value={stats.claimed} />
-        <StatCard icon={Wallet} label="Validated Revenue" value={`₱${stats.revenue.toFixed(0)}`} accent />
+        <StatCard icon={Wallet} label="Net Revenue" value={`₱${stats.revenue.toFixed(0)}`} accent />
+        <StatCard icon={Undo2} label="Refunded" value={`₱${stats.refundedAmount.toFixed(0)}`} />
       </div>
 
       <GlassCard className="mb-5 p-4 sm:p-5">

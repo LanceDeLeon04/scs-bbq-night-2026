@@ -31,8 +31,8 @@ export default function WaybillModal({ order, onClose }) {
         <div className="flex-1 overflow-y-auto px-5 py-4">
           {/* This is the only part visible when printing. */}
           <div className="waybill-print-area rounded-xl border border-white/[0.06] bg-white/[0.02] p-5 print:border-black print:bg-white print:p-8 print:text-black">
-            <h3 className="mb-4 text-center font-display text-lg font-bold uppercase tracking-wide text-smoke-200 print:text-black">
-              Waybill
+            <h3 className="mb-4 text-center font-display text-xl font-bold uppercase tracking-wide text-smoke-200 print:text-black">
+              {order.ticket_number}
             </h3>
             <dl className="space-y-3 text-sm">
               <WaybillField label="Name" value={order.name} />
@@ -56,9 +56,6 @@ export default function WaybillModal({ order, onClose }) {
                 </dd>
               </div>
             </dl>
-            <p className="mt-5 text-center font-mono text-xs text-smoke-500 print:text-black">
-              Ticket: {order.ticket_number}
-            </p>
           </div>
         </div>
 
