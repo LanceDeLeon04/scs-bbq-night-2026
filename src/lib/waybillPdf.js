@@ -1,4 +1,5 @@
 import { jsPDF } from 'jspdf'
+import { MENU } from './menu.js'
 
 // A4 portrait, 2 columns x 4 rows = 8 waybill cards per page. Card size works
 // out to roughly 90mm x 65mm each, which comfortably fits the waybill fields
@@ -23,6 +24,12 @@ export function generateAllWaybillsPDF(orders, filename = 'bbq-night-waybills') 
   const pageWidth = doc.internal.pageSize.getWidth()
   const pageHeight = doc.internal.pageSize.getHeight()
 
+  // Page 1: per-item totals across every order in this batch, so whoever is
+  // prepping/cutting/packing has one place to check "how many sticks of
+  // what" without tallying every individual waybill by hand.
+  drawSummaryPage(doc, orders, pageWidth)
+  doc.addPage()
+
   const usableWidth = pageWidth - PAGE_MARGIN * 2
   const usableHeight = pageHeight - PAGE_MARGIN * 2
   const cardWidth = (usableWidth - GUTTER_X * (COLS - 1)) / COLS
@@ -43,6 +50,112 @@ export function generateAllWaybillsPDF(orders, filename = 'bbq-night-waybills') 
 
   const stamp = new Date().toISOString().slice(0, 10)
   doc.save(`${filename}-${stamp}.pdf`)
+}
+
+// Tallies quantity per menu item across all orders in the batch. Looks up
+// the unit (pc vs bottle) from MENU by item id so "1.5L Coke" reads in
+// bottles while everything else reads in pcs, even though the order record
+// itself doesn't store a unit.
+function computeItemTotals(orders) {
+  const totals = new Map()
+
+  orders.forEach((order) => {
+    ;(order.items || []).forEach((it) => {
+      const key = it.id || it.name
+      const menuEntry = MENU.find((m) => m.id === it.id)
+      const unitLabel = menuEntry?.unit === 'bottle' ? 'bottles' : 'pcs'
+
+      const existing = totals.get(key)
+      if (existing) {
+        existing.qty += Number(it.qty) || 0
+      } else {
+        totals.set(key, { name: it.name, qty: Number(it.qty) || 0, unit: unitLabel })
+      }
+    })
+  })
+
+  // Preserve MENU order where possible so the summary lists items in the
+  // same order they appear on the order form, with any unrecognized items
+  // (e.g. old/renamed items) appended after.
+  const menuOrderIndex = new Map(MENU.map((m, i) => [m.name, i]))
+  return Array.from(totals.values()).sort((a, b) => {
+    const ai = menuOrderIndex.has(a.name) ? menuOrderIndex.get(a.name) : MENU.length
+    const bi = menuOrderIndex.has(b.name) ? menuOrderIndex.get(b.name) : MENU.length
+    return ai - bi
+  })
+}
+
+function drawSummaryPage(doc, orders, pageWidth) {
+  const totals = computeItemTotals(orders)
+  const totalRevenue = orders.reduce((sum, o) => sum + (Number(o.total) || 0), 0)
+  const leftX = PAGE_MARGIN + 10
+  const rightX = pageWidth - PAGE_MARGIN - 10
+
+  let cursorY = 28
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(18)
+  doc.setTextColor(20)
+  doc.text('Order Summary', pageWidth / 2, cursorY, { align: 'center' })
+  cursorY += 7
+
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(10)
+  doc.setTextColor(110)
+  const stamp = new Date().toLocaleDateString('en-PH', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  })
+  doc.text(
+    `Generated ${stamp} · ${orders.length} order${orders.length === 1 ? '' : 's'}`,
+    pageWidth / 2,
+    cursorY,
+    { align: 'center' }
+  )
+  cursorY += 14
+
+  doc.setDrawColor(180)
+  doc.line(leftX, cursorY, rightX, cursorY)
+  cursorY += 7
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(11)
+  doc.setTextColor(20)
+  doc.text('Item', leftX, cursorY)
+  doc.text('Total Quantity', rightX, cursorY, { align: 'right' })
+  cursorY += 3
+  doc.setDrawColor(210)
+  doc.line(leftX, cursorY, rightX, cursorY)
+  cursorY += 9
+
+  doc.setFontSize(12)
+  totals.forEach((t) => {
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(20)
+    doc.text(t.name, leftX, cursorY)
+
+    doc.setFont('helvetica', 'bold')
+    doc.text(`${t.qty} ${t.unit}`, rightX, cursorY, { align: 'right' })
+
+    cursorY += 8
+  })
+
+  cursorY += 3
+  doc.setDrawColor(180)
+  doc.line(leftX, cursorY, rightX, cursorY)
+  cursorY += 9
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(12)
+  doc.setTextColor(20)
+  doc.text('Total Revenue', leftX, cursorY)
+  doc.text(
+    `PHP ${totalRevenue.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`,
+    rightX,
+    cursorY,
+    { align: 'right' }
+  )
 }
 
 function drawWaybillCard(doc, order, x, y, w, h) {
