@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   Flame, Upload, CheckCircle2, Loader2, AlertCircle,
-  Copy, Check, Image as ImageIcon, ChevronDown, Mail,
+  Copy, Check, Image as ImageIcon, ChevronDown, Mail, Lock,
 } from 'lucide-react'
 import GlassCard from '../components/GlassCard.jsx'
 import ItemRow from '../components/ItemRow.jsx'
@@ -10,6 +10,7 @@ import { DEPARTMENTS, isPositionDepartment } from '../lib/departments.js'
 import { generateTicketNumber } from '../lib/ticket.js'
 import { supabase } from '../lib/supabaseClient.js'
 import { emailOrderPlaced } from '../lib/email.js'
+import { fetchOrderingOpen, subscribeOrderingOpen } from '../lib/settings.js'
 
 const STEPS = ['Details', 'Payment', 'Ticket']
 const DRAFT_KEY = 'scs_bbq_draft_v1'
@@ -41,6 +42,28 @@ export default function OrderForm() {
   const [placedOrder, setPlacedOrder] = useState(null)
   const [copied, setCopied] = useState(false)
   const [copiedNumber, setCopiedNumber] = useState(false)
+  const [orderingOpen, setOrderingOpenState] = useState(true)
+  const [checkingStatus, setCheckingStatus] = useState(true)
+
+  // Gate the whole form behind the admin-controlled "ordering open" flag.
+  // Checked once on load, then kept live via Realtime so someone mid-form
+  // sees "Ordering Closed" the moment an admin flips the switch, instead of
+  // being allowed to submit into a closed event.
+  useEffect(() => {
+    let active = true
+    fetchOrderingOpen().then((open) => {
+      if (!active) return
+      setOrderingOpenState(open)
+      setCheckingStatus(false)
+    })
+    const unsubscribe = subscribeOrderingOpen((open) => {
+      if (active) setOrderingOpenState(open)
+    })
+    return () => {
+      active = false
+      unsubscribe()
+    }
+  }, [])
 
   const total = useMemo(
     () => MENU.reduce((sum, item) => sum + (qtys[item.id] || 0) * item.price, 0),
@@ -122,6 +145,16 @@ export default function OrderForm() {
     setSubmitting(true)
     setError('')
     try {
+      // Belt-and-suspenders check: re-verify ordering is still open right
+      // before writing, in case this tab's Realtime update was missed.
+      const stillOpen = await fetchOrderingOpen()
+      if (!stillOpen) {
+        setOrderingOpenState(false)
+        setError('Ordering has just been closed. Your order was not submitted.')
+        setSubmitting(false)
+        return
+      }
+
       const ticketNumber = generateTicketNumber()
       const ext = screenshot.name.split('.').pop() || 'jpg'
       const path = `${ticketNumber}-${Date.now()}.${ext}`
@@ -218,6 +251,35 @@ export default function OrderForm() {
     await navigator.clipboard.writeText(GCASH_NUMBER)
     setCopiedNumber(true)
     setTimeout(() => setCopiedNumber(false), 1500)
+  }
+
+  // While checking the ordering-open flag, render nothing flashy — a blank
+  // main avoids a "form" → "closed" → "form" flicker on load.
+  if (checkingStatus) {
+    return <main className="relative z-10 mx-auto max-w-2xl px-5 pb-24 pt-10 sm:pt-14" />
+  }
+
+  // Ordering closed: block the form entirely, unless the person already has
+  // a just-placed ticket on screen (step 2) — don't yank their confirmation
+  // away if an admin closes ordering right after they submitted.
+  if (!orderingOpen && step !== 2) {
+    return (
+      <main className="relative z-10 mx-auto flex min-h-[70vh] max-w-md flex-col items-center justify-center px-5 text-center">
+        <div className="animate-rise">
+          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full border border-white/10 bg-white/[0.03]">
+            <Lock size={24} className="text-smoke-500" />
+          </div>
+          <h1 className="font-display text-2xl font-semibold text-smoke-300">
+            Ordering is <span className="text-ember-gradient">Closed</span>
+          </h1>
+          <p className="mt-3 text-sm text-smoke-500">
+            The BBQ Night order form isn't accepting new orders right now.
+            Please check back later, or ask the Student Council if you have
+            questions about your order.
+          </p>
+        </div>
+      </main>
+    )
   }
 
   return (

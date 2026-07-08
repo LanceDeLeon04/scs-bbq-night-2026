@@ -4,6 +4,7 @@ import {
   LogOut, RefreshCw, CheckCircle2, XCircle, PackageCheck, Package,
   ArrowUpDown, Search, Image as ImageIcon, Loader2, Flame, Users, Wallet,
   Trash2, AlertCircle, Building2, ScanLine, Undo2, FileText, FileSpreadsheet, Files,
+  Lock, Unlock,
 } from 'lucide-react'
 import GlassCard from '../components/GlassCard.jsx'
 import DispatchModal from '../components/DispatchModal.jsx'
@@ -13,6 +14,7 @@ import { supabase } from '../lib/supabaseClient.js'
 import { emailPaymentValidated, emailClaimed } from '../lib/email.js'
 import { exportOrdersToExcel } from '../lib/exportExcel.js'
 import { generateAllWaybillsPDF } from '../lib/waybillPdf.js'
+import { fetchOrderingOpen, setOrderingOpen } from '../lib/settings.js'
 
 const SORTS = {
   ticket: { label: 'Ticket Number', key: 'ticket_number' },
@@ -37,6 +39,9 @@ export default function AdminDashboard() {
   const [dispatchOpen, setDispatchOpen] = useState(false)
   const [refundOrder, setRefundOrder] = useState(null)
   const [waybillOrder, setWaybillOrder] = useState(null)
+  const [orderingOpen, setOrderingOpenState] = useState(true)
+  const [loadingOrderingStatus, setLoadingOrderingStatus] = useState(true)
+  const [togglingOrdering, setTogglingOrdering] = useState(false)
 
   useEffect(() => {
     if (sessionStorage.getItem('scs_bbq_admin') !== 'true') {
@@ -59,6 +64,27 @@ export default function AdminDashboard() {
   useEffect(() => {
     fetchOrders()
   }, [fetchOrders])
+
+  useEffect(() => {
+    fetchOrderingOpen().then((open) => {
+      setOrderingOpenState(open)
+      setLoadingOrderingStatus(false)
+    })
+  }, [])
+
+  const handleToggleOrdering = async () => {
+    const next = !orderingOpen
+    setTogglingOrdering(true)
+    try {
+      await setOrderingOpen(next)
+      setOrderingOpenState(next)
+    } catch (err) {
+      console.error('Failed to toggle ordering status:', err)
+      alert('Could not update ordering status. Please try again.')
+    } finally {
+      setTogglingOrdering(false)
+    }
+  }
 
   const logout = () => {
     sessionStorage.removeItem('scs_bbq_admin')
@@ -210,11 +236,36 @@ export default function AdminDashboard() {
           <h1 className="font-display text-2xl font-semibold text-smoke-300 sm:text-3xl">
             Orders <span className="text-ember-gradient">Dashboard</span>
           </h1>
-          <p className="mt-1 text-sm text-smoke-500">
+          <p className="mt-1 flex items-center gap-2 text-sm text-smoke-500">
             Validate payments and mark orders as claimed.
+            {!loadingOrderingStatus && !orderingOpen && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-red-500/15 px-2 py-0.5 text-[11px] font-medium text-red-300">
+                <Lock size={10} />
+                Ordering Closed
+              </span>
+            )}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={handleToggleOrdering}
+            disabled={loadingOrderingStatus || togglingOrdering}
+            className={`ember-ring flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${
+              orderingOpen
+                ? 'border-red-500/30 bg-red-500/10 text-red-300 hover:bg-red-500/20'
+                : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20'
+            }`}
+          >
+            {togglingOrdering ? (
+              <Loader2 size={13} className="animate-spin" />
+            ) : orderingOpen ? (
+              <Lock size={13} />
+            ) : (
+              <Unlock size={13} />
+            )}
+            {orderingOpen ? 'Close Ordering' : 'Open Ordering'}
+          </button>
           <button
             type="button"
             onClick={() => generateAllWaybillsPDF(orders)}

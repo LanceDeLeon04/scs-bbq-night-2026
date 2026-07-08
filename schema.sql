@@ -97,3 +97,49 @@ create policy "Public can delete payment screenshots"
   on storage.objects for delete
   to anon
   using (bucket_id = 'payment-screenshots');
+
+-- Simple key/value settings store. Currently holds one row:
+-- key = 'ordering_open', value = true/false (jsonb boolean) — toggled from
+-- Admin → "Close/Open Ordering" to lock the public order form.
+create table if not exists public.settings (
+  key text primary key,
+  value jsonb not null,
+  updated_at timestamptz not null default now()
+);
+
+insert into public.settings (key, value)
+values ('ordering_open', 'true'::jsonb)
+on conflict (key) do nothing;
+
+alter table public.settings enable row level security;
+
+drop policy if exists "Public can read settings" on public.settings;
+create policy "Public can read settings"
+  on public.settings for select
+  to anon
+  using (true);
+
+-- Same caveat as the orders table above: gated only by the client-side
+-- admin login, not real Supabase Auth.
+drop policy if exists "Public can upsert settings" on public.settings;
+create policy "Public can upsert settings"
+  on public.settings for insert
+  to anon
+  with check (true);
+
+drop policy if exists "Public can update settings" on public.settings;
+create policy "Public can update settings"
+  on public.settings for update
+  to anon
+  using (true)
+  with check (true);
+
+-- Lets the order form see "Ordering closed" the instant an admin toggles it,
+-- without needing a page refresh. Safe to re-run; Postgres just errors
+-- quietly if the table's already in the publication, which we ignore.
+do $$
+begin
+  alter publication supabase_realtime add table public.settings;
+exception
+  when duplicate_object then null;
+end $$;
